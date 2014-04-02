@@ -1,4 +1,4 @@
 Request.js
 ==========
 
-Framework resource frindy AJAX handling
+Framework for resource frindy AJAX handling
