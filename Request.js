@@ -7,6 +7,7 @@
 
         this.ajaxObjects = [];
         this.garbadeCollector = false;
+        this.getInstanceOperation = false;
 
 
     };
@@ -17,22 +18,25 @@
                 return function(){
                     var i = 0,
                         length = context.ajaxObjects.length,
-                        toSplice = [],
                         date = parseInt( ( (new Date())*1 ) - 1000, 10 );
-
+                    
+                    console.log('Request > garbadeCollector');
+                    
                     /* run through the Array and delete all Entrys with a used Date older than currentTime - interval Time */
                     for( ; i<length; i++ ) {
                         if( context.ajaxObjects[i].used < date && context.ajaxObjects[i].state === 0 ) {
-                            toSplice.push( i );
+                            context.ajaxObjects[i].state = 3;
+                            console.log('Request > Marked as removable', context.ajaxObjects[i]);
                         }
 
+                        /*
                         if(context.ajaxObjects[i].used < parseInt(date-5000, 10)) {
+                            console.log('Request > toSplice (old Entrys)', toSplice);
                             toSplice.push( i );
                         }
+                        */
                     }
-                    for( i=0; i<toSplice.length; i++ ) {
-                        context.ajaxObjects.splice(toSplice[i]);
-                    }
+                    context.removeInstance();
 
                     /* stop the Garbade Collector */
                     if( context.ajaxObjects.length === 0 ) {
@@ -43,6 +47,7 @@
         },
 
         stopGarbadeCollector: function(){
+            console.log('Request > Garbade Collector Stop');
             clearInterval( this.garbadeCollector );
             this.garbadeCollector = false;
 
@@ -67,9 +72,20 @@
         },
 
         getInstance: function() {
-            var i = 0,
-                length = this.ajaxObjects.length,
-                obj = false;
+            console.log( 'Request > getInstance' );
+            console.log( this.getInstanceOperation );
+            
+            while( this.getInstanceOperation ) {
+                console.log( 'Request > getInstance - busy...' );
+            }
+
+            this.getInstanceOperation = true;
+            console.log( 'Request > getInstance - go' );
+
+            var i       = 0,
+                length  = this.ajaxObjects.length,
+                obj     = false,
+                _return;
 
 
             for ( ; i<length; i++ ) {
@@ -79,13 +95,33 @@
                     this.ajaxObjects[i].used = (new Date())*1;
                 }
             }
+            
+            /* release the getInstance Method */
+            this.getInstanceOperation = false;
+            
+            _return = ( obj ) ? obj : this.createInstance();
+            
+            return _return;
+            
+        },
+        
+        removeInstance: function() {
+            console.log('Request > removeInstance');
 
-            if( obj ) {
-                return obj;
+            var i = 0,
+                length = this.ajaxObjects.length;
+            
+            for( ; i<length; i++) {
+
+                if( this.ajaxObjects[i] && this.ajaxObjects[i].state === 3 ) {
+                    /* clean up the Memory */
+                    //delete this.ajaxObjects[i];
+
+                    /* remove the Index from the Array */
+                    //this.ajaxObjects.splice(i);
+                }
             }
-            else {
-                return this.createInstance();
-            }
+
         },
 
         ajax: function( method, options ) {
@@ -96,7 +132,7 @@
                     'url'         : false,
                     'data'        : {},
                     'cache'       : true,
-                    'timeout'     : 5000,
+                    'timeout'     : 10000,
 
                     /* Callbacks */
                     'error'       : false,
